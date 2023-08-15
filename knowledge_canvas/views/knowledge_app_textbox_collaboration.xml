@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<odoo>
+    <record id="knowledge_app_textbox_collaboration" model="ir.ui.view">
+        <field name="name">knowledge.app.textbox.collaboration</field>
+        <field name="model">knowledge.article</field>
+        <field name="inherit_id" ref="knowledge.knowledge_article_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='body']" position="replace">
+                <field name="body" widget="knowledge_article_html_field" class="o_field_html" no_label="1" groups="base.group_user"
+                    options="{'collaborative': true, 'collaborative_trigger': 'start', 'resizable': False, 'knowledge_commands': true}"
+                    attrs="{'readonly': ['|', '|', ('is_locked', '=', True), ('user_can_write', '=', False), ('active', '=', False)]}"/>
+                <!-- Portal users get some commands disabled, notably /image and /file, as they don't have access to ir.attachment -->
+                <!-- <field name="body" widget="html" no_label="1" groups="base.group_portal"
+                    options="{'resizable': False, 'knowledge_commands': true, 'allowCommandImage': false, 'allowCommandVideo': false, 'allowCommandFile': false}"
+                    attrs="{'readonly': ['|', '|', ('is_locked', '=', True), ('user_can_write', '=', False), ('active', '=', False)]}"/> -->
+            </xpath>
+        </field>
+    </record>
+    <record id="knowledge_article_item_action_stages" model="ir.actions.act_window">
+        <field name="name">Article Items</field>
+        <field name="res_model">knowledge.article</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('parent_id', '=', active_id), ('is_article_item', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new article item
+            </p>
+        </field>
+    </record>
+</odoo>

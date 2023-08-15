@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Action -->
+        <record id="action_odoo_canvas" model="ir.actions.act_window">
+            <field name="name">Odoo Canvas</field>
+            <field name="res_model">odoo.canvas</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="menu_root" name="Canvas"
+                  action="action_odoo_canvas"
+                  web_icon="odoo_canvas,static/description/icon.png"
+                  sequence="20"/>
+    </data>
+</odoo>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="knowledge.wysiwyg_article_selection_modal" owl="1">
+        <Dialog size="'md'" title="this.props.title">
+            <div class="m-0">
+                <input t-ref="input" class="form-control" type="hidden" placeholder="Choose an Article"/>
+            </div>
+            <t t-set-slot="footer" owl="1">
+                <button class="btn btn-primary" t-out="this.props.confirmLabel"
+                    t-on-click="this.onArticleSelected.bind(this)"/>
+                <button class="btn btn-secondary" t-on-click="this.props.close.bind(this)">
+                    Cancel
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

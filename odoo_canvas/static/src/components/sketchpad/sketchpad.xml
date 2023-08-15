@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="odoo_canvas.sketchpad" owl="1">
+
+        <!-- Canvas -->
+        <div class="canvas_elements_wrapper">
+            <!-- Sketchpad Specific Options - displated on hover-->
+            <div class="hoverable_elements">
+                <t
+                    t-foreach="[
+                        {'text': 'Background Template', 'icon': 'image', 'callback': this.toggleModal},
+                        {'text': 'Undo', 'icon': 'undo', 'callback': this.undo},
+                        {'text': 'Download Image', 'icon': 'download', 'callback': this.saveImage},
+                        {'text': 'Clear Canvas', 'icon': 'remove', 'callback': this.clearCanvas},
+                    ]"
+                    t-as="action"
+                    t-key="action.text">
+                    <button
+                        class="btn-light ps-1 me-2 mb-1"
+                        t-on-click="() => action.callback()">
+                        <i t-att-class="'me-1 fa fa-' + action.icon" />
+                        <t t-esc="action.text" />
+                    </button>
+                </t>
+            </div>
+
+            <!-- Sketchpad -->
+            <div class="canvas-container resizable">
+                <canvas t-ref="canvas" class="canvas"/>
+                <canvas t-ref="overlayCanvas" class="overlay-canvas"/>
+                <canvas t-ref="backgroundTemplate" class="background-template"/>
+                <textarea t-ref="drawTextInput" class="draw_input"/>
+                <div class="resizer resizer-b"/>
+            </div>
+
+            <!-- Sketchpad Toolbar -->
+            <div class="toolbar_wrapper">
+                <SketchTools />
+            </div>
+        </div>
+
+
+        <!-- Background template selection modal -->
+        <div class="bg-template-modal" t-ref="backgroundTemplateModal">
+            <div class="bg-template-modal-content">
+                <span class="bg-template-close" t-on-click="() => this.toggleModal()"><i class="fa fa-remove"/></span>
+                        <h2>
+                            <span class="bg-template-header">Choose a Template</span>
+                            
+                        </h2>
+                <div class="bg-template-modal-grid">
+                    <t t-foreach="templates" t-as="template" t-key="template.name">
+                        <div class="bg-template-column">
+                            <img class="bg-template-thumbnail" t-att-src="template.url"/>
+                            <button
+                                t-on-click="() => this.changeBackgroundTemplate(template)"
+                                class="btn bgt btn-primary">
+                                <t t-esc="template.name"/>
+                            </button>
+                        </div>
+                    </t>
+                </div>
+                <div class="bg-template-column">
+                    <button
+                    t-on-click="() => this.changeBackgroundTemplate('clear')"
+                    class="btn bgt btn-warning">
+                    Clear Background Template
+                    </button>
+                </div>
+                <div class="bg-template-column">
+                    <button
+                    t-on-click="() => addImage('background')"
+                    class="btn bgt btn-warning">
+                    Upload Background Template
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </t>
+    <t t-name="odoo_canvas.CanvasBehavior">
+        <div t-attf-class="o_knowledge_behavior_anchor #{behaviorType}" t-att-data-behavior-props="behaviorProps">
+            <div class="o_knowledge_sketchpad_id"
+                data-prop-name="sketchpadId" t-out="sketchpadId"/>
+        </div>
+    </t>
+</templates>

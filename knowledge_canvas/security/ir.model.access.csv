@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_knowledge_article_stage_all,access.knowledge.article.stage.all,knowledge_canvas.model_knowledge_article_stage,,0,0,0,0
+access_knowledge_article_stage_portal,access.knowledge.article.stage.portal,knowledge_canvas.model_knowledge_article_stage,base.group_portal,1,1,1,1
+access_knowledge_article_stage_user,access.knowledge.article.stage.user,knowledge_canvas.model_knowledge_article_stage,base.group_user,1,1,1,1
+access_knowledge_article_stage_system,access.knowledge.article.stage.system,knowledge_canvas.model_knowledge_article_stage,base.group_system,1,1,1,1
+access_knowledge_article_user,access.knowledge.article.user,model_knowledge_canvas_sketchpad,base.group_user,1,1,1,0
+access_knowledge_article_system,access.knowledge.article.system,model_knowledge_canvas_sketchpad,base.group_system,1,1,1,1
+access_knowledge_article_user,access.knowledge.article.user,model_knowledge_canvas_sketchpad_stroke_history,base.group_user,1,1,1,0
+access_knowledge_article_system,access.knowledge.article.system,model_knowledge_canvas_sketchpad_stroke_history,base.group_system,1,1,1,1
+knowledge_canvas.access_knowledge_canvas_sketchpad,access_knowledge_canvas_sketchpad,knowledge_canvas.model_knowledge_canvas_sketchpad,base.group_user,1,1,1,1

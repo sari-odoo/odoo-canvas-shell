@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        <!-- Tree view -->
+        <record id="view_odoo_canvas_tree" model="ir.ui.view">
+            <field name="name">odoo.canvas.tree</field>
+            <field name="model">odoo.canvas</field>
+            <field name="arch" type="xml">
+                <tree string="Canvas" decoration-info="date_created == False">
+                    <field name="name"/>
+                    <field name="author"/>
+                    <field name="date_created"/>
+                    <field name="last_modified"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Form view -->
+        <record id="view_odoo_canvas_form" model="ir.ui.view">
+            <field name="name">odoo.canvas.form</field>
+            <field name="model">odoo.canvas</field>
+            <field name="arch" type="xml">
+                <form string="Canvas">
+                    <sheet>
+                        <div class="o_form_view">
+                            <div class="o_form_sheet_bg">
+                                <div class="o_form_sheet">
+                                    <group>
+                                        <group>
+                                            <field name="name"/>
+                                            <field name="author"/>
+                                            <label for="canvas_id" string="Canvas ID"/>
+                                            <div name="canvas_id">
+                                                <field nolabel="1" class="oe_inline" name="canvas_id" readonly="1"/>
+                                            </div>
+                                        </group>
+                                        <group>
+                                            <label for="date_created"/>
+                                            <div name="dates">
+                                                <field nolabel="1" class="oe_inline" name="date_created"/>
+                                                <field nolabel="1" class="oe_inline" name="last_modified"/>
+                                            </div>
+                                        </group>
+                                    </group>
+                                    <div class="mt16" style="display: flex; justify-content: space-around; margin-top: 50px;">
+                                            <button name="go_to_canvas" type="object" class="btn btn-primary test">Go to Canvas</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+</odoo>

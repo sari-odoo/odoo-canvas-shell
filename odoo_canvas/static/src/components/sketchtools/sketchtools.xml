@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="odoo_canvas.sketchtools" owl="1">
+
+        <div class="sketchpad_toolbar">
+            <!-- Sketch Tools -->
+            <div class="toolbar" contenteditable="false">
+                <input
+                    type="color"
+                    class="color-picker"
+                    t-on-input="(ev) => this.setDrawingColor(ev)"
+                    t-att-value="this.state.strokeColor"
+                    t-att-style="'background-color:' + this.state.strokeColor+';'"
+                    title="Change brush color."
+                />
+
+                <input
+                    type="range"
+                    min="5"
+                    max="100"
+                    value="10"
+                    class="brush-size tool-btn"
+                    t-on-change="(ev) => this.setBrushSize(ev)"
+                    title="Adjust brush/eraser size."
+                />
+
+                <t
+                    t-foreach="[
+                        {'mode': 'sketch', 'name': '', 'icon': 'pencil'},
+                        {'mode': 'text', 'name': '', 'icon': 'font'},
+                        {'mode': 'shape','name': 'rectangle', 'icon': 'square'},
+                        {'mode': 'shape','name': 'line', 'icon': 'minus'},
+                        {'mode': 'shape','name': 'circle', 'icon': 'circle'},
+                        {'mode': 'erase', 'name': '', 'icon': 'eraser'},
+                        {'mode': 'select', 'name': '', 'icon': 'mouse-pointer'},
+                    ]"
+                    t-as="action"
+                    t-key="action.mode + action.name">
+                    <button
+                        t-on-click="(event) => this.setDrawMode(action.mode, action.name)"
+                        class='tool-btn'
+                        t-att-style="this.state.mode + this.state.drawingShape === action.mode + action.name ? 'background-color: #875a7b' : ''">
+                            <i
+                                t-att-class="'fa fa-' + action.icon + ' icon'"
+                                t-att-style="this.state.mode + this.state.drawingShape === action.mode + action.name ? 'color: #FFF;' : 'color: #875a7b;'"/>
+                    </button>
+                </t>
+
+                <button
+                    id="addImageButton"
+                    class="btn tool-btn"
+                    t-on-click="() => this.setDrawMode('image', '')"
+                    t-att-style="'border-color: #875a7b; color: #875a7b'"
+                    > <i class="fa fa-image icon" t-att-style="'color: #875a7b;'"/>
+                </button>
+
+                <select id="font_select" t-on-change="(ev) => this.setFont(ev)">
+                    <t t-foreach="['Arial', 'Times New Roman', 'Courier New']" t-as="font" t-key="font">
+                        <option t-att-value="font" >
+                            <t t-esc="font"/>
+                        </option>
+                    </t>
+                </select>
+
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <!-- /clipboard template -->
+    <t t-name="knowledge.TemplateBehavior" owl="1">
+        <div class="d-flex justify-content-between flex-wrap w-100">
+            <div class="o_knowledge_template_label px-2 py-1 text-break">Clipboard</div>
+            <BehaviorToolbar>
+                <t t-set-slot="buttons">
+                    <BehaviorToolbarButton
+                        hidden="!targetRecordInfo?.withChatter"
+                        icon="'fa-envelope'"
+                        label="env._t('Send as Message')"
+                        onClick.bind="onClickSendAsMessage"
+                    />
+                    <BehaviorToolbarButton
+                        hidden="!targetRecordInfo?.withHtmlField"
+                        icon="'fa-pencil-square'"
+                        label="htmlFieldTargetMessage"
+                        onClick.bind="onClickUseAsDescription"
+                    />
+                    <BehaviorToolbarButton
+                        icon="'fa-clipboard'"
+                        label="env._t('Copy')"
+                        name="'copyToClipboard'"
+                        onClick.bind="onClickCopyToClipboard"
+                        title="env._t('Copy to Clipboard')"
+                    />
+                </t>
+            </BehaviorToolbar>
+        </div>
+        <div class="o_knowledge_content" data-prop-name="content" t-ref="templateContent"
+            data-oe-protected="false"
+            t-att-contenteditable="!props.readonly ? 'true' : 'false'">
+            <t t-out="content" />
+        </div>
+    </t>
+</templates>

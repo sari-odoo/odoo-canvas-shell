@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<template id="template" xml:space="preserve">
+    
+    <t t-name="toolbar" owl="1">
+        <div class="toolbar">
+            <div class="icon" t-on-click="() => this.selectedTool('select')"><i class="fa fa-mouse-pointer"></i></div>
+            <div class="icon" t-on-click="() => this.selectedTool('text')"><i class="fa fa-font"></i></div>
+            <div class="icon" t-on-click="() => this.selectedTool('erase')"><i class="fa fa-eraser"></i></div>
+        </div>
+        
+    </t>
+
+</template>
+

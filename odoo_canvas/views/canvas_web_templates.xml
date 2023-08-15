@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <!-- Canvas Home Page -->
+        <template id="canvas_home">
+            <t t-call="website.layout">
+                <h1>Hello Canvas</h1>
+            </t>
+        </template>
+
+        <!-- Canvas Page -->
+        <!-- This page will open the link that users can access to collaborate using
+            a shared drawing board and text/code pad -->
+        <template id="odoo_canvas.canvas_page">
+
+                <t t-call="website.layout">
+
+                    <!-- Header -->
+                    <header class="canvas-header">
+                        <img src="/odoo_canvas/static/description/odooCanvasLogo.png" class="image-Logo"/>
+                    </header>
+
+                    <!-- The canvas module code will be loaded in the div below -->
+                    <div id="canvas-page"></div>
+                </t>
+        </template>
+    </data>
+</odoo>

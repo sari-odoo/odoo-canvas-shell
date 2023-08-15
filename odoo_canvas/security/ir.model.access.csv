@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_odoo_canvas,access_odoo_canvas,model_odoo_canvas,base.group_user,1,1,1,1
+access_odoo_canvas_manager,access_odoo_canvas_manager,model_odoo_canvas,base.group_system,1,1,1,1
+odoo_canvas.access_odoo_canvas_object_wizard,access_odoo_canvas_object_wizard,odoo_canvas.model_odoo_canvas_object_wizard,base.group_user,1,1,1,1
+odoo_canvas.access_odoo_canvas_object,access_odoo_canvas_object,odoo_canvas.model_odoo_canvas_object,base.group_user,1,1,1,1

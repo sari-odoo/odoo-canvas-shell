@@ -1,0 +1,160 @@
+:root {
+  --odoo-purple: #875a7b;
+  --odoo-dark-purple: #5a3c52;
+  --odoo-light-purple: #64435b;
+  --white: #fff;
+  --shadow: rgba(133, 90, 123, 0.5);
+}
+
+.icon {
+  padding: 4px;
+  color: var(--white);
+}
+
+// for sketch pad wrapper inside knowledge NOTE: put back $o-gray-200 when transferring to knowledge
+.o_knowledge_behavior_type_canvas {
+  padding: 10px;
+  margin: 15px 0 15px 0;
+}
+
+// position the toolbar to be fixed at the bottom
+.sketchpad_toolbar {
+  position: fixed;
+  display: flex;
+  bottom: 5px;
+  left: 0;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  z-index: 100;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+@media screen and (min-width: 768px) {
+  .sketchpad_toolbar {
+    padding-left: 250px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .toolbtn {
+    margin-bottom: 4px;
+  }
+}
+
+.toolbar {
+  max-width: 90%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--white);
+  background: var(--white);
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: 0px 5px 14px 0px rgba(54, 54, 54, 0.15);
+}
+
+.tool-btn {
+  background-color: transparent;
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--odoo-purple);
+  margin: 0 5px;
+}
+
+input[type="color"] {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+}
+
+.color-picker {
+  block-size: 30px;
+  width: 37px;
+}
+
+.color-picker,
+.brush-size {
+  color: var(--white);
+  border: 0px transparent;
+}
+
+.tool-btn:hover {
+  opacity: 0.8;
+}
+
+.btn-odoo.tool-btn {
+  background-color: var(--odoo-purple);
+  border-color: var(--odoo-dark-purple);
+  color: var(--white);
+}
+
+.btn-odoo:hover {
+  background-color: var(--odoo-light-purple);
+  color: var(--white);
+  border-color: var(--odoo-light-purple);
+  text-shadow: 0 0 5x var(--white), 0 0 10px var(--white), 0 0 15px var(--odoo-purple), 0 0 20px var(--odoo-purple),
+    0 0 20px var(--odoo-purple), 0 0 30px var(--odoo-purple), 0 0 30px var(--odoo-purple);
+}
+
+// for the options menu
+#font_select {
+  display: inline;
+  background-color: transparent;
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--odoo-purple);
+  width: auto;
+}
+
+// contains the minimize button
+// add margin top and bottom
+
+.min_container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+
+// hides the toolbar
+.hidden_toolbar {
+  display: none;
+}
+
+.btn-odoo.tool-btn.outline {
+  background-color: var(--white);
+  border-color: var(--odoo-purple);
+  color: var(--odoo-purple);
+  border-width: 1px; /* make the size of the border larger */
+  border-radius: 5px; /* to give it a slightly rounded outline - remove if not needed */
+}
+
+/* for the codeblock in Knowledge app */
+.custom-codeblock {
+    background: #323232;
+    padding: 15px;
+    border-radius: 10px;
+    font-family: 'Consolas', monospace;
+    color: #cec2ab;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.6;
+    font-size: 18px;
+    border-left: 5px solid #cfcfcf;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+}
+
+/* for codeblock spacing*/
+pre.language-javascript, pre.language-python, pre.language-cpp, pre.language-java {
+  white-space: pre-line; /* or pre-line, depending on your exact needs */
+}
