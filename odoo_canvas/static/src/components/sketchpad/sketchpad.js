@@ -76,8 +76,8 @@ export class Sketchpad extends AbstractBehavior {
       canvasContext: null, // the canvas context
       overlayCanvasContext: null, // the canvas used for drawing shapes
       backgroundTemplateContext: null, // the canvas used for background template
-      canvasHeight: 500, // the height of the canvas
-      canvasWidth: 1000, // the width of the canvas
+      canvasHeight: 730, // the height of the canvas
+      canvasWidth: 730, // the width of the canvas
       isMinimized: false, // used to determine if the toolbar is minimized
 
       // Canvas - Drawing
@@ -118,6 +118,8 @@ export class Sketchpad extends AbstractBehavior {
       this.state.allStrokes = this.state.allStrokes.concat(strokesCache.strokes)
       // Initialize the stroke to be the next stroke in the sequence for the user
       this._strokeId = this.state.allStrokes.reduce((max, stroke) => stroke.user === this.state.user ? Math.max(max, stroke.id) : max, -1) + 1;
+
+      //Create a channel specific for the sketchpad and add it to the listener
       const channel = "knowledge_canvas_sketchpad_stroke_" + this.state.id
       this.env.services['bus_service'].addChannel(channel);
       this.env.services['bus_service'].addEventListener('notification', this.peekNotificationsInChannel.bind(this));
@@ -136,12 +138,16 @@ export class Sketchpad extends AbstractBehavior {
       );
       this.state.backgroundTemplateContext = this.backgroundTemplateRef.el.getContext("2d");
 
+      if (this.canvasRef.el.offsetHeight/this.canvasRef.el.offsetWidth < 1) {
+        this.state.canvasHeight = this.canvasRef.el.offsetWidth;
+      } else {
+        this.state.canvasHeight = this.canvasRef.el.offsetHeight;
+      }
       this.state.canvasWidth = this.canvasRef.el.offsetWidth;
-      this.state.canvasHeight = this.canvasRef.el.offsetHeight;
+      // set the dimensions of the canvases, refactor as a for each loop for each canvas
       this.setDimensions(this.canvasRef.el, this.state.canvasHeight, this.state.canvasWidth);
       this.setDimensions(this.overlayCanvasRef.el, this.state.canvasHeight, this.state.canvasWidth);
       this.setDimensions(this.backgroundTemplateRef.el, this.state.canvasHeight, this.state.canvasWidth);
-
       // fill the background template with default white
       this.clearBackground();
 
@@ -153,9 +159,15 @@ export class Sketchpad extends AbstractBehavior {
 
       this.resizer = this.canvasRef.el.parentElement.querySelector('.resizer');
       this.resizer.addEventListener('mousedown', (event) => this.mouseDownHandler(event));
+      this.resizer.addEventListener('touchstart', (event) => this.mouseDownHandler(event));
 
+      // Added all window listeners to the check so that when there are multiple sketchpads present there is a
+      // single event listener for everything and the function is not called multiple times.
       if(document.getElementsByClassName('canvas_elements_wrapper').length == 1) {
         window.addEventListener("resize", () => this.debouncedHandleResize());
+        // When the user navigates away from the page, the database sync is trigerred.
+        // Used visibility instead of unmount to handle the case in mobiles where the user
+        // might just leave the tab open and navigate to another app and then clear all apps.
         window.addEventListener("visibilitychange", () => this.flushToDatabase());
       }
 
@@ -171,6 +183,7 @@ export class Sketchpad extends AbstractBehavior {
         let lineWidth = parseInt(ev.detail.lineWidth);
         let font = (lineWidth / 2 + 10 )+ "px " + this.state.font.split(" ")[1];
         this.state.lineWidth = lineWidth;
+        this.state.font = font;
       });
 
       this.state.overlayCanvasContext.lineCap = "round";
@@ -195,6 +208,9 @@ export class Sketchpad extends AbstractBehavior {
   _strokeId = 0;  // used to keep track of the stroke id
   templateModalRef = useRef("backgroundTemplateModal")
 
+  /**
+   * Get notifications from the channel for collaboration
+   */
   async peekNotificationsInChannel(notification) {
     if (notification && notification.detail && notification.detail.length > 0) {
       let payload = notification.detail, strokes = [], deletions = [];
@@ -221,6 +237,9 @@ export class Sketchpad extends AbstractBehavior {
     }
   }
 
+  /**
+   * Flush data to the database when the user leaves the page
+   */
   flushToDatabase() {
     this.rpc.query({
         model: 'knowledge_canvas.sketchpad_stroke_history',
@@ -228,6 +247,9 @@ export class Sketchpad extends AbstractBehavior {
     }).then(() => {})
   }
 
+  /**
+   * Remove canvas listeners when the sketchpad is unmounted
+   */
   _removeCanvasEventListeners() {
     this.canvasRefListenersMap.forEach((handler, eventType) => {
       this.overlayCanvasRef.el.removeEventListener(eventType, handler);
@@ -291,6 +313,13 @@ export class Sketchpad extends AbstractBehavior {
         this.state.backgroundTemplateContext.drawImage(img, 0, 0, this.state.canvasWidth, this.state.canvasHeight);
         this.state.strokeColor = template.strokeColor;
 
+        if (window.knowledgeCanvas)
+            window.knowledgeCanvas.color = template.strokeColor;
+        else
+            window.knowledgeCanvas = {color: template.strokeColor};
+        let event = new CustomEvent("colorChange", { detail: { color: template.strokeColor } });
+        window.dispatchEvent(event);
+
         // generate Action History for the template for collaboration
         this.generateActionHistory("template", {
           imgSrc: this.backgroundTemplateRef.el.toDataURL("image/jpeg")
@@ -340,6 +369,9 @@ export class Sketchpad extends AbstractBehavior {
       this.generateActionHistory("template", {
         imgSrc: compressedImg.src
       });
+
+      // quick fix for template only showing on one screen on upload
+      this.state.backgroundTemplateContext.drawImage(compressedImg,0,0);
     }
     this.toggleModal(); // closes modal
   }
@@ -363,48 +395,46 @@ export class Sketchpad extends AbstractBehavior {
     canvas.width = width;
   }
 
-
   /**
    * Handles the canvas dimensions when resizing the window
    */
   handleResize() {
-    document.addEventListener('DOMContentLoaded', () => {
+    if(this.canvasRef.el !== null) {
       let width = this.canvasRef.el.offsetWidth;
-      let height = this.canvasRef.el.offsetHeight;
+      let height = this.canvasRef.el.offsetHeight * (this.state.canvasWidth/this.canvasRef.el.offsetWidth);
 
-    // Step 1: Create temporary canvases to hold the scaled images
-    const tempCanvas = document.createElement('canvas');
-    const tempBackground = document.createElement('canvas');
-    this.setDimensions(tempCanvas, height, width);
-    this.setDimensions(tempBackground, height, width);
+      // Step 1: Create temporary canvases to hold the scaled images
+      const tempCanvas = document.createElement('canvas');
+      const tempBackground = document.createElement('canvas');
+      this.setDimensions(tempCanvas, height, width);
+      this.setDimensions(tempBackground, height, width);
 
-    const tempContext = tempCanvas.getContext('2d');
-    const tempBackgroundContext = tempBackground.getContext('2d');
+      const tempContext = tempCanvas.getContext('2d');
+      const tempBackgroundContext = tempBackground.getContext('2d');
 
-    // Step 2: Draw the original image onto the temporary canvas with the desired width and height
-    tempContext.drawImage(this.canvasRef.el, 0, 0, this.state.canvasWidth, this.state.canvasHeight, 0, 0, width, height);
-    tempBackgroundContext.drawImage(this.backgroundTemplateRef.el, 0, 0, this.state.canvasWidth, this.state.canvasHeight, 0, 0, width, height);
+      // Step 2: Draw the original image onto the temporary canvas with the desired width and height
+      tempContext.drawImage(this.canvasRef.el, 0, 0, this.state.canvasWidth, this.state.canvasHeight, 0, 0, width, height);
+      tempBackgroundContext.drawImage(this.backgroundTemplateRef.el, 0, 0, this.state.canvasWidth, this.state.canvasHeight, 0, 0, width, height);
 
-    // Step 3: Get the image data from the temporary canvas
-    const scaledCanvasData = tempContext.getImageData(0, 0, width, height);
-    const scaledBackgroundData = tempBackgroundContext.getImageData(0, 0, width, height);
+      // Step 3: Get the image data from the temporary canvas
+      const scaledCanvasData = tempContext.getImageData(0, 0, width, height);
+      const scaledBackgroundData = tempBackgroundContext.getImageData(0, 0, width, height);
 
-    // Step 4: Update the canvas dimensions and put the scaled image data onto the main canvas
-    let canvases = [this.canvasRef.el, this.overlayCanvasRef.el, this.backgroundTemplateRef.el]; // find way to make this global
-    this.state.canvasWidth = width;
-    this.state.canvasHeight = height;
+      // Step 4: Update the canvas dimensions and put the scaled image data onto the main canvas
+      let canvases = [this.canvasRef.el, this.overlayCanvasRef.el, this.backgroundTemplateRef.el]; // find way to make this global
+      this.state.canvasWidth = width;
+      this.state.canvasHeight = height;
 
-    canvases.forEach((canvas) => {
-      this.setDimensions(canvas, height, width);
-    });
+      canvases.forEach((canvas) => {
+        this.setDimensions(canvas, height, width);
+      });
 
-    this.state.canvasContext.putImageData(scaledCanvasData, 0, 0);
-    this.state.backgroundTemplateContext.putImageData(scaledBackgroundData, 0, 0);
+      this.state.canvasContext.putImageData(scaledCanvasData, 0, 0);
+      this.state.backgroundTemplateContext.putImageData(scaledBackgroundData, 0, 0);
 
       this.state.canvasContext.lineCap = "round";
       this.state.overlayCanvasContext.lineCap = "round";
-      this.drawActionHistory(this.state.allStrokes);
-    });
+    }
   }
 
   debouncedHandleResize = _.debounce(this.handleResize, 200);
@@ -437,6 +467,9 @@ export class Sketchpad extends AbstractBehavior {
     this.throttledSyncActionHistory();
   }
 
+  /**
+   * Handle the height resize of the sketchpad when the user increases the size
+   */
   mouseDownHandler(e) {
     // Get the current mouse position
     this.state.resize_y = e.pageY;
@@ -447,43 +480,66 @@ export class Sketchpad extends AbstractBehavior {
 
     window.addEventListener('mousemove', this.boundMouseMoveHandler);
     window.addEventListener('mouseup', this.boundMouseUpHandler);
+    window.addEventListener('touchmove', this.boundMouseMoveHandler);
+    window.addEventListener('touchend', this.boundMouseUpHandler);
   }
 
+  /**
+   * Calculate the difference in height when the mouse moves
+   */
   mouseMoveHandler(e) {
     // How far the mouse has been moved
-    const dy = e.pageY - this.state.resize_y;
+    const height = e.pageY - this.state.resize_y;
 
-    if(dy < 0) {
+    if(height < 0) {
       return
     }
 
-    const height = this.state.canvasHeight + dy
+    this.state.prevHeight = this.state.canvasHeight
 
     this.addCanvasHeight(height)
   }
 
+  /**
+   * Add height to the canvas. This function is called by both resize toolbar and by the action history.
+   */
   addCanvasHeight(height) {
-    let originalImage = this.state.canvasContext.getImageData(
-      0,
-      0,
-      this.canvasRef.el.offsetWidth,
-      this.canvasRef.el.offsetHeight
-    );
+    if (this.canvasRef.el !== null) {
+      let originalImage = this.state.canvasContext.getImageData(
+        0,
+        0,
+        this.canvasRef.el.offsetWidth,
+        this.canvasRef.el.offsetHeight
+      );
 
-    this.state.canvasHeight = height;
-    this.canvasRef.el.height = height;
-    this.overlayCanvasRef.el.height = height;
-    this.backgroundTemplateRef.el.height = height;
+      this.state.canvasHeight += height;
+      this.canvasRef.el.height = this.state.canvasHeight;
+      this.overlayCanvasRef.el.height = this.state.canvasHeight;
 
-    this.state.canvasContext.putImageData(originalImage, 0, 0);
+      const tempBackground = document.createElement('canvas');
+      this.setDimensions(tempBackground, this.state.canvasHeight, this.state.canvasWidth);
+      const tempBackgroundContext = tempBackground.getContext('2d');
+      tempBackgroundContext.drawImage(this.backgroundTemplateRef.el, 0, 0, this.state.canvasWidth, this.state.canvasHeight - height, 0, 0, this.state.canvasWidth, this.state.canvasHeight);
+      const scaledBackgroundData = tempBackgroundContext.getImageData(0, 0, this.state.canvasWidth, this.state.canvasHeight);
+
+      this.backgroundTemplateRef.el.height = this.state.canvasHeight;
+
+      this.state.canvasContext.putImageData(originalImage, 0, 0);
+      this.state.backgroundTemplateContext.putImageData(scaledBackgroundData, 0, 0);
+    }
   }
 
+  /**
+   * Remove resize event listeners and add an entry in action history for syncing the changes between users.
+   */
   mouseUpHandler() {
     this.generateActionHistory('resize', {
-      'canvasHeight': this.canvasRef.el.offsetHeight
+      'canvasHeight': (this.canvasRef.el.offsetHeight - this.state.prevHeight)
     })
     window.removeEventListener('mousemove', this.boundMouseMoveHandler);
     window.removeEventListener('mouseup', this.boundMouseUpHandler);
+    window.removeEventListener('touchmove', this.boundMouseMoveHandler);
+    window.removeEventListener('touchend', this.boundMouseUpHandler);
   }
 
   executeDeletions(deletions) {
@@ -529,7 +585,11 @@ export class Sketchpad extends AbstractBehavior {
       switch (stroke.action) {
         case "arc":
           let path = new Path2D();
-          path.arc(params.initialCoordinates.x, params.initialCoordinates.y, params.radius, 0, 2 * Math.PI);
+          path.arc(
+            parseInt(params.initialCoordinates.x * this.state.canvasWidth),
+            parseInt(params.initialCoordinates.y * this.state.canvasHeight),
+            parseInt(params.radius * this.state.canvasWidth),
+            0, 2 * Math.PI);
           this.state.canvasContext.fill(path);
           break;
 
@@ -551,9 +611,15 @@ export class Sketchpad extends AbstractBehavior {
             drawPath = new Path2D();
             drawPath.lineCap = "round";
             drawPath.lineWidth = params.lineWidth;
-            drawPath.moveTo(params.initialCoordinates.x, params.initialCoordinates.y);
+            drawPath.moveTo(
+              parseInt(params.initialCoordinates.x * this.state.canvasWidth),
+              parseInt(params.initialCoordinates.y * this.state.canvasHeight)
+            );
           }
-          drawPath.lineTo(params.currentCoordinates.x, params.currentCoordinates.y);
+          drawPath.lineTo(
+            parseInt(params.currentCoordinates.x * this.state.canvasWidth),
+            parseInt(params.currentCoordinates.y * this.state.canvasHeight)
+          );
           drawPath.lineCap = "round";
           this.state.canvasContext.lineCap = "round";
           if (stroke.action === 'erase-freehand')
@@ -564,9 +630,12 @@ export class Sketchpad extends AbstractBehavior {
           // reset drawPath and canvas color
           drawPath = null;
           if (FREE_SKETCH_MODES.includes(this.state.mode) || this.state.isMousePressed) {
-            const mouseCoordinates = {x: this.state.initialMouseCordinates.x, y: this.state.initialMouseCordinates.y};
+            const mouseCoordinates = {x: this.state.initialMouseCordinates.x * this.state.canvasWidth, y: this.state.initialMouseCordinates.y * this.state.canvasHeight};
             this.state.canvasContext.beginPath();
-            this.state.canvasContext.moveTo(mouseCoordinates.x, mouseCoordinates.y);
+            this.state.canvasContext.moveTo(
+              parseInt(mouseCoordinates.x * this.state.canvasWidth),
+              parseInt(mouseCoordinates.y * this.state.canvasHeight)
+            );
           }
           break;
 
@@ -581,7 +650,11 @@ export class Sketchpad extends AbstractBehavior {
 
         case "text":
           this.state.canvasContext.font = params.font;
-          this.state.canvasContext.fillText(params.text, params.initialCoordinates.x, params.initialCoordinates.y);
+          this.state.canvasContext.fillText(
+            params.text,
+            parseInt(params.initialCoordinates.x * this.state.canvasWidth),
+            parseInt(params.initialCoordinates.y * this.state.canvasHeight)
+          );
           break;
 
         case "clear":
@@ -590,17 +663,20 @@ export class Sketchpad extends AbstractBehavior {
 
         case "point":
           this.state.canvasContext.beginPath();
-          this.state.canvasContext.arc(params.currentCoordinates.x, params.currentCoordinates.y, params.lineWidth / 2, 0, 2 * Math.PI);
+          this.state.canvasContext.arc(
+            parseInt(params.currentCoordinates.x * this.state.canvasWidth),
+            parseInt(params.currentCoordinates.y * this.state.canvasHeight),
+            params.lineWidth / 2, 0, 2 * Math.PI);
           this.state.canvasContext.closePath();
           this.state.canvasContext.fill();
           break;
 
         case "fillRect":
           this.state.canvasContext.fillRect(
-            params.initialCoordinates.x,
-            params.initialCoordinates.y,
-            params.currentCoordinates.x - params.initialCoordinates.x,
-            params.currentCoordinates.y - params.initialCoordinates.y
+            parseInt(params.initialCoordinates.x * this.state.canvasWidth),
+            parseInt(params.initialCoordinates.y * this.state.canvasHeight),
+            parseInt((params.currentCoordinates.x - params.initialCoordinates.x) * this.state.canvasWidth),
+            parseInt((params.currentCoordinates.y - params.initialCoordinates.y) * this.state.canvasHeight)
           );
           this.state.canvasContext.fill();
           break;
@@ -609,6 +685,10 @@ export class Sketchpad extends AbstractBehavior {
         case "actionGroupEnd":
         case "deleteOne":
         case "deleteMany":
+          break;
+
+        case 'resize':
+          this.addCanvasHeight(params.canvasHeight);
           break;
 
         case 'resize':
@@ -672,13 +752,17 @@ export class Sketchpad extends AbstractBehavior {
           const intercept = actionParams.initialCoordinates.y - slope * actionParams.initialCoordinates.x;
           const distanceToLine = Math.abs(slope * mouseCoordinates.x - mouseCoordinates.y + intercept) / Math.sqrt(Math.pow(slope, 2) + 1);
           shapeToDelete = (distanceToLine <= actionParams.lineWidth);
+          shapeToDelete &= (mouseCoordinates.x >= Math.min(actionParams.initialCoordinates.x, actionParams.currentCoordinates.x) &&
+            mouseCoordinates.x <= Math.max(actionParams.initialCoordinates.x, actionParams.currentCoordinates.x) &&
+            mouseCoordinates.y >= Math.min(actionParams.initialCoordinates.y, actionParams.currentCoordinates.y) &&
+            mouseCoordinates.y <= Math.max(actionParams.initialCoordinates.y, actionParams.currentCoordinates.y));
           break;
 
         case "fillRect":
-          shapeToDelete = (mouseCoordinates.x >= actionParams.initialCoordinates.x &&
-              mouseCoordinates.x <= actionParams.currentCoordinates.x &&
-              mouseCoordinates.y >= actionParams.initialCoordinates.y &&
-              mouseCoordinates.y <= actionParams.currentCoordinates.y);
+          shapeToDelete = (mouseCoordinates.x >= Math.min(actionParams.initialCoordinates.x, actionParams.currentCoordinates.x) &&
+          mouseCoordinates.x <= Math.max(actionParams.initialCoordinates.x, actionParams.currentCoordinates.x) &&
+          mouseCoordinates.y >= Math.min(actionParams.initialCoordinates.y, actionParams.currentCoordinates.y) &&
+          mouseCoordinates.y <= Math.max(actionParams.initialCoordinates.y, actionParams.currentCoordinates.y));
           break;
       }
       if (shapeToDelete) {
@@ -697,14 +781,22 @@ export class Sketchpad extends AbstractBehavior {
    * @param {*} event
    */
   onMouseOut(ev) {
+    let selectedShape = null;
+    if (this.state.selectedShape) {
+      selectedShape = this.state.selectedShape;
+      this.state.selectedShape = null;
+      this.state.overlayCanvasContext.clearRect(0, 0, this.state.canvasWidth, this.state.canvasHeight);
+    }
     if (!this.state.isMousePressed) return;
     if (this.state.drawingShape) this.onMouseUp(ev);
-    if (FREE_SKETCH_MODES.includes(this.state.mode)) {
-      this.generateActionHistory("actionGroupEnd");
+    if (selectedShape) {
+      this.generateActionHistory("deleteOne", {
+        localId: selectedShape.id,
+        createdBy: selectedShape.user
+      });
     }
-    if (this.state.selectedShape) {
-      this.state.overlayCanvasContext.clearRect(0, 0, this.state.canvasWidth, this.state.canvasHeight);
-      this.state.selectedShape = null;
+    if (selectedShape || FREE_SKETCH_MODES.includes(this.state.mode)) {
+      this.generateActionHistory("actionGroupEnd");
     }
     this.state.isMousePressed = false;
     this.state.initialMouseCordinates = {x: null, y: null};
@@ -732,12 +824,12 @@ export class Sketchpad extends AbstractBehavior {
     if (ev.touches) {
       if (ev.touches.length)
         return {
-          x: parseInt(ev.touches[0].clientX - canvasCoordinates.left),
-          y: parseInt(ev.touches[0].clientY - canvasCoordinates.top),
+          x: parseInt(ev.touches[0].clientX - canvasCoordinates.left)/this.state.canvasWidth,
+          y: parseInt(ev.touches[0].clientY - canvasCoordinates.top)/this.state.canvasHeight,
         };
       else return this.state.touchCoordinates;
     }
-    return { x: parseInt(ev.clientX - canvasCoordinates.left), y: parseInt(ev.clientY - canvasCoordinates.top) };
+    return { x: (ev.clientX - canvasCoordinates.left)/this.state.canvasWidth, y: (ev.clientY - canvasCoordinates.top)/this.state.canvasHeight };
   }
 
   async saveStrokes(action) {
@@ -766,8 +858,8 @@ export class Sketchpad extends AbstractBehavior {
         this.state.initialMouseCordinates = mousePosition;
         Object.assign(this.drawTextInputRef.el.style, {
           display: "block",
-          left: mousePosition.x + "px",
-          top: mousePosition.y + "px",
+          left: parseInt(mousePosition.x * this.state.canvasWidth) + "px",
+          top: parseInt(mousePosition.y * this.state.canvasHeight) + "px",
         });
         this.drawTextInputRef.el.focus();
         break;
@@ -807,6 +899,19 @@ export class Sketchpad extends AbstractBehavior {
    * Draws text on the canvas
    */
   onTextBlur(ev) {
+    // Fix the font correctly, grabbing it from the div directly
+    let font_family = document.getElementById("font_select").value;
+    let font = (this.state.lineWidth / 2 + 10 )+ "px " + font_family;
+
+    // Set the font
+    this.state.font = font;
+
+    // Check if coordinates are null
+    if (!this.state.initialMouseCordinates.x) {
+      // Grab the position
+      const mousePosition = this.getMousePosition(ev);
+      this.state.initialMouseCordinates = mousePosition;
+    }
     const text = ev.target.value;
 
     // Now, draw the text and set the font
@@ -818,7 +923,11 @@ export class Sketchpad extends AbstractBehavior {
     const lines = text.split("\n");
     const lineHeight = parseInt(this.state.font.split(" ")[0]) * 1.286;
     for (let i = 0; i < lines.length; i++) {
-      this.state.canvasContext.fillText(lines[i], this.state.initialMouseCordinates.x, this.state.initialMouseCordinates.y + lineHeight * i);
+      this.state.canvasContext.fillText(
+        lines[i],
+        parseInt(this.state.initialMouseCordinates.x * this.state.canvasWidth),
+        parseInt(this.state.initialMouseCordinates.y * this.state.canvasHeight + lineHeight * i)
+      );
     }
 
     this.drawTextInputRef.el.style.display = "none";
@@ -907,7 +1016,6 @@ export class Sketchpad extends AbstractBehavior {
   sketchClick(ev) {
     ev.preventDefault(); // prevents the canvas from getting selected on touch devices
     if (this.state.disableClick) return;
-    if (this.state.disableClick) return;
     let mousePosition = this.getMousePosition(ev);
 
 
@@ -931,8 +1039,8 @@ export class Sketchpad extends AbstractBehavior {
       height *= scaleFactor;
 
       // Getting position to center the image
-      const x = mousePosition.x - width / 2;
-      const y = mousePosition.y - height / 2;
+      const x = mousePosition.x * this.state.canvasWidth - width / 2;
+      const y = mousePosition.y * this.state.canvasHeight - height / 2;
 
       // Drawing image
       this.state.canvasContext.drawImage(this.img, x, y, width, height);
@@ -1029,8 +1137,11 @@ export class Sketchpad extends AbstractBehavior {
       // case: Free-hand drawing/erasing
       if (FREE_SKETCH_MODES.includes(this.state.mode)) {
         const path = new Path2D();
-        path.moveTo(this.state.initialMouseCordinates.x, this.state.initialMouseCordinates.y);
-        path.lineTo(mousePosition.x, mousePosition.y);
+        path.moveTo(
+          parseInt(this.state.initialMouseCordinates.x * this.state.canvasWidth),
+          parseInt(this.state.initialMouseCordinates.y * this.state.canvasHeight)
+        );
+        path.lineTo(parseInt(mousePosition.x * this.state.canvasWidth), parseInt(mousePosition.y * this.state.canvasHeight));
 
         if (this.state.mode === "erase")
         this.state.canvasContext.globalCompositeOperation="destination-out"; // set to transparent erase mode
@@ -1062,10 +1173,10 @@ export class Sketchpad extends AbstractBehavior {
     canvasContext.beginPath();
     canvasContext.fillStyle = strokeColor;
     canvasContext.fillRect(
-      initialMouseCordinates.x,
-      initialMouseCordinates.y,
-      mousePosition.x - initialMouseCordinates.x,
-      mousePosition.y - initialMouseCordinates.y
+      parseInt(initialMouseCordinates.x * this.state.canvasWidth),
+      parseInt(initialMouseCordinates.y * this.state.canvasHeight),
+      parseInt(mousePosition.x * this.state.canvasWidth - initialMouseCordinates.x * this.state.canvasWidth),
+      parseInt(mousePosition.y * this.state.canvasHeight - initialMouseCordinates.y * this.state.canvasHeight)
     );
     canvasContext.fill();
   }
@@ -1086,8 +1197,8 @@ export class Sketchpad extends AbstractBehavior {
     lineWidth = this.state.lineWidth,
     strokeColor = this.state.strokeColor) {
     let path = new Path2D();
-    path.moveTo(initialMouseCordinates.x, initialMouseCordinates.y);
-    path.lineTo(mousePosition.x, mousePosition.y);
+    path.moveTo(parseInt(initialMouseCordinates.x * this.state.canvasWidth), parseInt(initialMouseCordinates.y * this.state.canvasHeight));
+    path.lineTo(parseInt(mousePosition.x * this.state.canvasWidth), parseInt(mousePosition.y * this.state.canvasHeight));
     canvasContext.strokeStyle = strokeColor;
     canvasContext.lineWidth = lineWidth;
     canvasContext.stroke(path);
@@ -1106,9 +1217,9 @@ export class Sketchpad extends AbstractBehavior {
     strokeColor = this.state.strokeColor) {
     let path = new Path2D();
     path.arc(
-      initialMouseCordinates.x,
-      initialMouseCordinates.y,
-      radius || Math.sqrt(this.squaredEucledianDistance(mousePosition, this.state.initialMouseCordinates)),
+      parseInt(initialMouseCordinates.x * this.state.canvasWidth),
+      parseInt(initialMouseCordinates.y * this.state.canvasHeight),
+      parseInt(radius * this.state.canvasWidth || Math.sqrt(this.squaredEucledianDistance(mousePosition, this.state.initialMouseCordinates)) * this.state.canvasWidth),
       0,
       2 * Math.PI
     );
@@ -1123,13 +1234,8 @@ export class Sketchpad extends AbstractBehavior {
     this.state.isMousePressed = false;
     this.state.canvasContext.clearRect(0, 0, this.state.canvasWidth, this.state.canvasHeight);
     this.state.actionHistory = [];
-    this.state.allStrokes = [];
     this.state.selectedShape = null;
     this.generateActionHistory("clear");
-    // save the template history since the previous stroke history contents are cleared for performance
-    this.generateActionHistory("template", {
-      imgSrc: this.backgroundTemplateRef.el.toDataURL("image/jpeg")
-    });
   }
 
   /**
@@ -1160,6 +1266,7 @@ export class Sketchpad extends AbstractBehavior {
    * Sets the drawing type to either erase or draw
    */
   setDrawMode(mode, shape) {
+    if (!this.overlayCanvasRef.el) return;  // Hacky fix for when the event listener persists after component is unmounted
     this.state.mode = mode;
     this.state.drawingShape = shape;
     this.state.selectedShape = null;
@@ -1173,7 +1280,7 @@ export class Sketchpad extends AbstractBehavior {
         this.overlayCanvasRef.el.style.cursor = "crosshair";
         break;
       case "image":
-        this.overlayCanvasRef.el.style.cursor = "crosshair";
+        this.overlayCanvasRef.el.style.cursor = "pointer";
         this.addImage('canvas');
         break;
       default:
@@ -1243,11 +1350,6 @@ export class Sketchpad extends AbstractBehavior {
    * @param {string} dest destination of where to add the image (canvas or background)
    */
   addImage(dest) {
-    // Set mode to image if not already
-    if (this.state.mode !== "image") {
-      this.setDrawMode("image");
-    }
-
     const input = document.createElement("input");
     input.setAttribute("type", "file");
     input.setAttribute("accept", "image/*"); // to restrict to only image files
@@ -1313,7 +1415,7 @@ export class Sketchpad extends AbstractBehavior {
           // Set placing image to true
           this.state.placingImage = true;
       }
-      
+
       img.src = imgSrc;
   }
 
@@ -1352,8 +1454,8 @@ export class Sketchpad extends AbstractBehavior {
         this.state.allStrokes[lastActionIndex].deleted = true;
         deletedActions++;
         // If the user is free sketching, undo all the free sketching actions (stored as multiple line actions)
-        params.start = Math.min(params.start, lastActionIndex);
-        params.end = Math.max(params.end, lastActionIndex);
+        params.start = Math.min(params.start, this.state.allStrokes[lastActionIndex].id);
+        params.end = Math.max(params.end, this.state.allStrokes[lastActionIndex].id);
         isFreeSketching |= (currentAction.action === "actionGroupEnd");      // true if user was free sketching
         isFreeSketching &= (currentAction.action !== "actionGroupStart");    // false when user started free sketching
         if (!isFreeSketching) {
@@ -1395,9 +1497,11 @@ export class Sketchpad extends AbstractBehavior {
         const signX = Math.sign(selectedShape.params.currentCoordinates.x - selectedShape.params.initialCoordinates.x);
         const signY = Math.sign(selectedShape.params.currentCoordinates.y - selectedShape.params.initialCoordinates.y);
         this.drawRectangle(
-          {x: selectedShape.params.currentCoordinates.x + signX * 5, y: selectedShape.params.currentCoordinates.y + signY * 5},
+          {x: selectedShape.params.currentCoordinates.x + signX * (5 / this.state.canvasWidth),
+          y: selectedShape.params.currentCoordinates.y + signY * (5 / this.state.canvasHeight)},
           this.state.overlayCanvasContext,
-          {x: selectedShape.params.initialCoordinates.x - signX * 5, y: selectedShape.params.initialCoordinates.y - signY * 5},
+          {x: selectedShape.params.initialCoordinates.x - signX * (5 / this.state.canvasWidth),
+          y: selectedShape.params.initialCoordinates.y - signY * (5 / this.state.canvasHeight)},
           "#ACCEF7",
         );
         this.drawRectangle(
@@ -1428,7 +1532,7 @@ export class Sketchpad extends AbstractBehavior {
           null,
           this.state.overlayCanvasContext,
           selectedShape.params.initialCoordinates,
-          selectedShape.params.radius + 5,
+          selectedShape.params.radius + (5 / this.state.canvasWidth),
           "#ACCEF7",
         );
         this.drawCircle(

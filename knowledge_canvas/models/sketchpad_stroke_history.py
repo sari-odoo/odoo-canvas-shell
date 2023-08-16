@@ -94,11 +94,13 @@ class SketchpadStrokesCollaboration(models.AbstractModel):
                     # Here we collect the strokes that have to be marked as deleted or restored
                     if stroke['action'] == 'deleteOne':
                         deleted_indexes = [
+                            ('sketchpad_seq_id', '=', sketchpad_id),
                             ('local_stroke_id', '=', stroke['params']['localId']),
                             ('user_identifier', '=', stroke['params']['createdBy'])
                         ]
                     elif stroke['action'] == 'deleteMany':
                         undo_indexes = [
+                            ('sketchpad_seq_id', '=', sketchpad_id),
                             ('local_stroke_id', '>=', stroke['params']['start']),
                             ('local_stroke_id', '<=', stroke['params']['end']),
                             ('user_identifier', '=', stroke['params']['createdBy'])
@@ -106,6 +108,7 @@ class SketchpadStrokesCollaboration(models.AbstractModel):
                         # contains the shapes that were deleted, so we need to restore them if the user undoes the action
                         if 'restore' in stroke['params']:
                             restore_indexes = [
+                                ('sketchpad_seq_id', '=', sketchpad_id),
                                 ('local_stroke_id', '=', stroke['params']['restore']['localId']),
                                 ('user_identifier', '=', stroke['params']['restore']['createdBy'])
                             ]

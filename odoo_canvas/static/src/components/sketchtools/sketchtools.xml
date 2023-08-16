@@ -56,7 +56,7 @@
 
                 <select id="font_select" t-on-change="(ev) => this.setFont(ev)">
                     <t t-foreach="['Arial', 'Times New Roman', 'Courier New']" t-as="font" t-key="font">
-                        <option t-att-value="font" >
+                        <option t-att-value="font">
                             <t t-esc="font"/>
                         </option>
                     </t>

@@ -43,10 +43,12 @@ export class SketchTools extends Component {
      */
     setFont(ev) {
         this.state.font = ev.target.value;
-        if (window.knowledgeCanvas)
+        if (window.knowledgeCanvas) {
             window.knowledgeCanvas.font = ev.target.value;
-        else
+        }
+        else {
             window.knowledgeCanvas = {font: ev.target.value};
+        }
         let event = new CustomEvent("fontChange", { detail: { font: ev.target.value } });
         window.dispatchEvent(event);
     }

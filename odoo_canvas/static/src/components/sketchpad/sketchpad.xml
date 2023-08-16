@@ -3,7 +3,7 @@
     <t t-name="odoo_canvas.sketchpad" owl="1">
 
         <!-- Canvas -->
-        <div class="canvas_elements_wrapper">
+        <div class="canvas_elements_wrapper" contenteditable="false">
             <!-- Sketchpad Specific Options - displated on hover-->
             <div class="hoverable_elements">
                 <t
