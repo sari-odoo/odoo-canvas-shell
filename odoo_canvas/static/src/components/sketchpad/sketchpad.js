@@ -252,10 +252,10 @@ export class Sketchpad extends AbstractBehavior {
    */
   _removeCanvasEventListeners() {
     this.canvasRefListenersMap.forEach((handler, eventType) => {
-      this.overlayCanvasRef.el.removeEventListener(eventType, handler);
+      this.overlayCanvasRef.el?.removeEventListener(eventType, handler);
     });
 
-    this.drawTextInputRef.el.removeEventListener("blur", () => this.onTextBlur());
+    this.drawTextInputRef.el?.removeEventListener("blur", () => this.onTextBlur());
     this.resizer.removeEventListener('mousedown', (event) => this.mouseDownHandler(event));
 
     if(document.getElementsByClassName('canvas_elements_wrapper').length == 1) {
@@ -465,7 +465,10 @@ export class Sketchpad extends AbstractBehavior {
     const actionEntry = { id: this._strokeId, action, user: this.state.user, params };
     this._strokeId++;
     this.state.actionHistory.push(actionEntry);
-    this.state.allStrokes.push(actionEntry);
+    let localActionHistory = JSON.parse(JSON.stringify(actionEntry));
+    if (action === "resize")
+      localActionHistory.deleted = true;
+    this.state.allStrokes.push(localActionHistory);
     this.throttledSyncActionHistory();
   }
 
@@ -564,13 +567,14 @@ export class Sketchpad extends AbstractBehavior {
       }
       if (stroke.action === "clear" && !stroke.deleted) break;  // all actions before this are redundant
     }
-    this.drawActionHistory();
+
+    this.drawActionHistory(this.state.allStrokes, true, true);
   }
 
   /**
    * Draws all the actions in the action history
    */
-  drawActionHistory(strokes = this.state.allStrokes, redraw = true) {
+  drawActionHistory(strokes = this.state.allStrokes, redraw = true, ignoreTemplates = false) {
     let drawPath; // used to make an object that contains the path to be drawn from other clients
     const redrawStartIndex = redraw ? this.findRecentClearCanvasAction() : 0;
     for (let i = redrawStartIndex; i < strokes.length; i++) {
@@ -642,11 +646,12 @@ export class Sketchpad extends AbstractBehavior {
           break;
 
         case "template":
+          if (ignoreTemplates) break;
           const img = new Image();
           img.src = stroke.params.imgSrc;
 
           img.onload = () => {
-            this.state.backgroundTemplateContext.drawImage(img,0,0);
+            this.state.backgroundTemplateContext.drawImage(img,0,0,this.state.canvasWidth,this.state.canvasHeight);
           }
           break;
 
@@ -691,10 +696,7 @@ export class Sketchpad extends AbstractBehavior {
 
         case 'resize':
           this.addCanvasHeight(params.canvasHeight);
-          break;
-
-        case 'resize':
-          this.addCanvasHeight(params.canvasHeight);
+          strokes[i].deleted = true;
           break;
 
         default:
@@ -857,8 +859,10 @@ export class Sketchpad extends AbstractBehavior {
     switch (this.state.mode) {
       case "text":
         this.state.initialMouseCordinates = mousePosition;
+        
         if (this.drawTextInputRef.el.style.display === "block")
           this.drawTextInputRef.el.blur();
+        
         Object.assign(this.drawTextInputRef.el.style, {
           display: "block",
           left: parseInt(mousePosition.x * this.state.canvasWidth) + "px",
@@ -886,7 +890,7 @@ export class Sketchpad extends AbstractBehavior {
         this.findShape(mousePosition, true);
         if (this.state.selectedShape) {
           this.state.canvasContext.clearRect(0, 0, this.state.canvasWidth, this.state.canvasHeight);
-          this.drawActionHistory();
+          this.drawActionHistory(this.state.allStrokes, true, true);
           this.highlightShape();
         }
         else {
@@ -924,7 +928,7 @@ export class Sketchpad extends AbstractBehavior {
     // Draw the text
     // If the text is too long, split it into multiple lines
     const lines = text.split("\n");
-    const lineHeight = parseInt(this.state.font.split(" ")[0]) * 1.05;
+    const lineHeight = parseInt(this.state.font.split(" ")[0]) * 1.286;
     for (let i = 0; i < lines.length; i++) {
       this.state.canvasContext.fillText(
         lines[i],
@@ -1442,8 +1446,9 @@ export class Sketchpad extends AbstractBehavior {
       * 2. Actions that were already deleted
       * 3. Actions that were logs of previous Undo (deleteMany) actions
       * 4. Actions that are not templates
+      * 5. Action that is resize
       */
-      if (currentAction.user === user && !currentAction.deleted && currentAction.action !== "deleteMany" && currentAction.action !== "template") {
+      if (currentAction.user === user && !currentAction.deleted && !["deleteMany", "template", "resize"].includes(currentAction.action)) {
         if (currentAction.action === "deleteOne") {
           const {createdBy, localId} = currentAction.params;
           params.restore = { createdBy, localId }
@@ -1478,7 +1483,7 @@ export class Sketchpad extends AbstractBehavior {
       this.state.canvasContext.beginPath();
       this.state.canvasContext.fill();  // This is to prevent the last action from being drawn again
       this.state.canvasContext.clearRect(0, 0, this.state.canvasWidth, this.state.canvasHeight);
-      this.drawActionHistory();
+      this.drawActionHistory(this.state.allStrokes, true, true);
       if (user === this.state.user) {
         params.createdBy = user;
         this.generateActionHistory("deleteMany", params);
