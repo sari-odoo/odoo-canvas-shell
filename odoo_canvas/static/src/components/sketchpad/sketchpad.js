@@ -97,7 +97,7 @@ export class Sketchpad extends AbstractBehavior {
       actionHistory: [], // the history of actions taken by the user
       allStrokes: [], // the history of actions taken by all users
       shapeHistory: [], // the history of shapes drawn by all users
-      user: String(session.partner_id) || 'G' + Date.now(), // partner_id or G (guest) + the timestamp of initialization
+      user: session.partner_id, // partner_id or G (guest) + the timestamp of initialization
       id: parseInt(this.props.sketchpadId)
     });
 
@@ -391,6 +391,8 @@ export class Sketchpad extends AbstractBehavior {
    * @param {number} width
    */
   setDimensions(canvas, height, width){
+    if (!canvas || !height || !width)
+      console.log('hi');
     canvas.height = height;
     canvas.width = width;
   }
@@ -738,6 +740,7 @@ export class Sketchpad extends AbstractBehavior {
       const actionParams = this.state.allStrokes[i].params;
       const actionLog = this.state.allStrokes[i];
       if (actionLog.deleted) continue;
+      if (actionLog.action === 'clear') break;  // all actions before this are redundant
       let shapeToDelete = false;
       switch (actionLog.action) {
         case "arc":
@@ -867,10 +870,10 @@ export class Sketchpad extends AbstractBehavior {
         if (!this.state.initialMouseCordinates.x)
           this.state.initialMouseCordinates = mousePosition;
         break;
-      case "sketch":
       case "image":
         this.state.initialMouseCordinates = mousePosition;
         break;
+      case "sketch":
       case "erase":
         this.generateActionHistory("actionGroupStart")
         this.state.isMousePressed = true;
@@ -907,7 +910,7 @@ export class Sketchpad extends AbstractBehavior {
     this.state.font = font;
 
     // Check if coordinates are null
-    if (!this.state.initialMouseCordinates.x) {
+    if (!this.state.initialMouseCordinates.x || !this.state.initialMouseCordinates.y) {
       // Grab the position
       const mousePosition = this.getMousePosition(ev);
       this.state.initialMouseCordinates = mousePosition;

@@ -124,7 +124,7 @@ class SketchpadStrokesCollaboration(models.AbstractModel):
                     AND local_stroke_id >= %s
                     AND local_stroke_id <= %s
                     AND sketchpad_seq_id = %s
-                """, (undo_indexes[2][2], undo_indexes[0][2], undo_indexes[1][2], sketchpad_id)) # possibly use ORM to do this when it supports
+                """, (undo_indexes[3][2], undo_indexes[1][2], undo_indexes[2][2], sketchpad_id)) # possibly use ORM to do this when it supports
             if restore_indexes:
                 self.env['knowledge_canvas.sketchpad_stroke_history'].search(restore_indexes).write({'deleted': False})
 
@@ -138,5 +138,5 @@ class SketchpadStrokeHistory(models.Model):
     sketchpad_seq_id = fields.Many2one('knowledge_canvas.sketchpad', 'Sketchpad Sequence ID', ondelete='cascade', required=True)
     stroke = Json('Stroke History')
     deleted = fields.Boolean('Deleted', default=False)
-    user_identifier = fields.Char('User Identifier', index=True)
+    user_identifier = fields.Integer('User Identifier', index=True)
     local_stroke_id = fields.Integer('Local Stroke ID', index=True)
