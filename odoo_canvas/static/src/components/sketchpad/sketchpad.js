@@ -856,9 +856,9 @@ export class Sketchpad extends AbstractBehavior {
 
     switch (this.state.mode) {
       case "text":
+        this.state.initialMouseCordinates = mousePosition;
         if (this.drawTextInputRef.el.style.display === "block")
           this.drawTextInputRef.el.blur();
-        this.state.initialMouseCordinates = mousePosition;
         Object.assign(this.drawTextInputRef.el.style, {
           display: "block",
           left: parseInt(mousePosition.x * this.state.canvasWidth) + "px",
