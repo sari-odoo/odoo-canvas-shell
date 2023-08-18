@@ -921,23 +921,18 @@ export class Sketchpad extends AbstractBehavior {
     this.state.canvasContext.font = this.state.font;
     this.state.canvasContext.fillStyle = this.state.strokeColor;
 
-    // Click on the screen and gather the mouse coordinates
-    if (this.state.initialMouseCordinates.x === null || this.state.initialMouseCordinates.y === null) {
-      const mousePosition = this.getMousePosition(ev);
-      this.state.initialMouseCordinates = mousePosition;
-      if (this.state.mode === "text") {
-        this.state.canvasContext.beginPath();
-        this.state.canvasContext.moveTo(
-          parseInt(mousePosition.x * this.state.canvasWidth),
-          parseInt(mousePosition.y * this.state.canvasHeight)
-        );
-      }
-    }
-
-    // If mouse coords are NaN, set them to middle of canvas
-    if (isNaN(this.state.initialMouseCordinates.x) || isNaN(this.state.initialMouseCordinates.y)) {
-      this.state.initialMouseCordinates = { x: 50, y: 50 };
-    }
+    // // Click on the screen and gather the mouse coordinates
+    // if (this.state.initialMouseCordinates.x === null || this.state.initialMouseCordinates.y === null) {
+    //   const mousePosition = this.getMousePosition(ev);
+    //   this.state.initialMouseCordinates = mousePosition;
+    //   if (this.state.mode === "text") {
+    //     this.state.canvasContext.beginPath();
+    //     this.state.canvasContext.moveTo(
+    //       parseInt(mousePosition.x * this.state.canvasWidth),
+    //       parseInt(mousePosition.y * this.state.canvasHeight)
+    //     );
+    //   }
+    // }
 
     // Draw the text
     // If the text is too long, split it into multiple lines
