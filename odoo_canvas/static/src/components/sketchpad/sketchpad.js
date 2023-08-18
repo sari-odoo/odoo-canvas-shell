@@ -921,23 +921,10 @@ export class Sketchpad extends AbstractBehavior {
     this.state.canvasContext.font = this.state.font;
     this.state.canvasContext.fillStyle = this.state.strokeColor;
 
-    // // Click on the screen and gather the mouse coordinates
-    // if (this.state.initialMouseCordinates.x === null || this.state.initialMouseCordinates.y === null) {
-    //   const mousePosition = this.getMousePosition(ev);
-    //   this.state.initialMouseCordinates = mousePosition;
-    //   if (this.state.mode === "text") {
-    //     this.state.canvasContext.beginPath();
-    //     this.state.canvasContext.moveTo(
-    //       parseInt(mousePosition.x * this.state.canvasWidth),
-    //       parseInt(mousePosition.y * this.state.canvasHeight)
-    //     );
-    //   }
-    // }
-
     // Draw the text
     // If the text is too long, split it into multiple lines
     const lines = text.split("\n");
-    const lineHeight = parseInt(this.state.font.split(" ")[0]) * 1.286;
+    const lineHeight = parseInt(this.state.font.split(" ")[0]) * 1.05;
     for (let i = 0; i < lines.length; i++) {
       this.state.canvasContext.fillText(
         lines[i],
