@@ -934,6 +934,11 @@ export class Sketchpad extends AbstractBehavior {
       }
     }
 
+    // If mouse coords are NaN, set them to middle of canvas
+    if (isNaN(this.state.initialMouseCordinates.x) || isNaN(this.state.initialMouseCordinates.y)) {
+      this.state.initialMouseCordinates = { x: 50, y: 50 };
+    }
+
     // Draw the text
     // If the text is too long, split it into multiple lines
     const lines = text.split("\n");
