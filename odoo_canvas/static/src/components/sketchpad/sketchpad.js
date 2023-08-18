@@ -921,8 +921,9 @@ export class Sketchpad extends AbstractBehavior {
     this.state.canvasContext.font = this.state.font;
     this.state.canvasContext.fillStyle = this.state.strokeColor;
 
+    const mousePosition = this.getMousePosition(ev);
     this.state.initialMouseCordinates = mousePosition;
-    alert("the mouse position is " + mousePosition.x + " " + mousePosition.y + " and the coords are the same.");
+    alert("mouse position is " + mousePosition.x + " " + mousePosition.y + "");
 
     // Draw the text
     // If the text is too long, split it into multiple lines
